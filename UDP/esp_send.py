@@ -11,12 +11,6 @@ class send_message():
             ssid = "Tufts_Wireless"
             print("Connecting to {}...".format(ssid))
             wlan.connect(ssid)
-            while not wlan.isconnected():
-                time.sleep(1)
-                print('.')
-
-        print("Connected!")
-        print("IP address:", wlan.ifconfig()[0])
 
         self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.s.connect((IP, port))
