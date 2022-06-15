@@ -18,6 +18,9 @@ class send_message():
         self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.s.connect((IP, port))
         
+        print("Connected!")
+        print("IP address:", wlan.ifconfig()[0])
+        
     def send(self, msg):
         msg = bytes(msg, "utf-8")
         
