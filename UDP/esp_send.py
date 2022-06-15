@@ -1,6 +1,5 @@
-import network, socket, time
 from machine import Pin
-
+import network, socket, time
 pin = machine.Pin(2, machine.Pin.OUT)
 
 class send_message():
@@ -32,7 +31,5 @@ class send_message():
             pin.value(1)
             time.sleep(.025)
 
-    def close():
+    def close(self):
         self.s.close()
-
-
