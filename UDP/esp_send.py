@@ -1,7 +1,5 @@
 import network, socket, time
 
-pin = machine.Pin(2, machine.Pin.OUT)
-
 class send_message():
     def __init__(self, IP, port):
         wlan = network.WLAN(network.STA_IF)
