@@ -1,4 +1,7 @@
 import network, socket, time
+from machine import Pin
+
+pin = machine.Pin(2, machine.Pin.OUT)
 
 class send_message():
     def __init__(self, IP, port):
@@ -19,6 +22,12 @@ class send_message():
         msg = bytes(msg, "utf-8")
         
         self.s.send(msg)
+
+        for i in range(3):
+            pin.value(0)
+            time.sleep(.025)
+            pin.value(1)
+            time.sleep(.025)
 
     def close():
         self.s.close()
