@@ -7,9 +7,9 @@ To do
 
 Changelog
 6/15/22
-- 
+- Cleaned up the code a little bit
 6/14/22
-- gave code a proper name
+- Gave code a proper name
 '''
 
 
@@ -18,28 +18,27 @@ Changelog
 
 # initialize the hub and get your imports
 from Backpack_Code import Backpack
-import hub, math, utime
+import hub, math, utime, os, sys
 from hub import motion
 from spike import PrimeHub
 
 
 
-# file = '''
-# print('testing')
-# '''
-# file = file.replace("\'",'"')
+file = '''
+print('testing')
+'''
+file = file.replace("\'",'"')
 
 # make sure you change the port to wherever you have the ESP plugged in on the Prime
 dongle = Backpack(hub.port.F, verbose = True) 
 
 dongle.setup()
-# filename = 'test.py'
-# dongle.load(filename,file)
-# reply = dongle.get(filename)
-# print(reply == file)
+filename = 'test.py'
+dongle.load(filename,file)
+reply = dongle.get(filename)
 
-
-# print("Testing done.")
+if (reply == file):
+    print("Testing done.")
 print("_________________________________________________________")
 
 
@@ -51,29 +50,6 @@ dongle.ask('from esp_send import send_message')
 dongle.ask('x = send_message(\"10.245.95.56\", 21024)')
 
 
-
-# iteration = 0
-# move = 1300
-# while (iteration < 2):
-#     print("New iteration, get ready to move.")
-#     print("3")
-#     utime.sleep(.1)
-#     print("2")
-#     utime.sleep(.1)
-#     print("1")
-#     utime.sleep(.1)
-#     print("Move!")
-# 
-#     utime.sleep(.1)
-#     print('Processing...')
-#     iteration += 1
-#     move = move + iteration
-#     message = "x.send(\'" + str(move) + "\')"
-#     print("message is", message)
-#     dongle.ask(message)
-#     utime.sleep(.1)
-# 
-# print("End of program. ***NOT*****")
 
 hub.display.clear()
 utime.sleep(.5)
@@ -101,11 +77,12 @@ while True:
     #find maximum acceleration while left button was held
     acc = max(accs)
     
-    print(accs)
-    print(acc)
-    message2 = "x.send(\'" + str(acc) + "\')"
-    dongle.ask(message2)
-    print(message2)
+    # uncomment these if you want to see the accel data
+    # print(accs)
+    # print(acc)
+    message = "x.send(\'" + str(acc) + "\')"
+    dongle.ask(message)
+    print(message)
     
     #display an arrow on hub display with increasing brightness
     for i in range(11):
