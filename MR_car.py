@@ -1,5 +1,4 @@
-from spike import PrimeHub, LightMatrix, Button, StatusLight, ForceSensor, 
-MotionSensor, Speaker, ColorSensor, App, DistanceSensor, Motor, MotorPair
+from spike import PrimeHub, LightMatrix, Button, StatusLight, ForceSensor, MotionSensor, Speaker, ColorSensor, App, DistanceSensor, Motor, MotorPair
 from spike.control import wait_for_seconds, wait_until, Timer
 from math import *
 import bluetooth
@@ -8,31 +7,24 @@ import struct
 from micropython import const
 
 _ADV_TYPE_FLAGS = const(0x01)            # GAP通信における制御情報
-_ADV_TYPE_NAME = const(0x09)            # 
-デバイスの名称(完全版)(28Bを超えるなら0x08の短縮名称を使う)
-_ADV_TYPE_UUID16_COMPLETE = const(0x3)# 
-利用可能な16ビットUUID(全てのUUIDをAD Dataに含める場合)
+_ADV_TYPE_NAME = const(0x09)            # デバイスの名称(完全版)(28Bを超えるなら0x08の短縮名称を使う)
+_ADV_TYPE_UUID16_COMPLETE = const(0x3)# 利用可能な16ビットUUID(全てのUUIDをAD Dataに含める場合)
 _ADV_TYPE_UUID32_COMPLETE = const(0x5)
 _ADV_TYPE_UUID128_COMPLETE = const(0x7)
-_ADV_TYPE_UUID16_MORE = const(0x2)    # 
-利用可能な16ビットUUID(一部のUUIDのみAD Dataに含める場合)
+_ADV_TYPE_UUID16_MORE = const(0x2)    # 利用可能な16ビットUUID(一部のUUIDのみAD Dataに含める場合)
 _ADV_TYPE_UUID32_MORE = const(0x4)
 _ADV_TYPE_UUID128_MORE = const(0x6)
 _ADV_TYPE_APPEARANCE = const(0x19)    # デバイスの機能種別名
-_ADV_TYPE_SPECIFIC_DATA = const(0xFF)    # 
-任意の送信データ(ベンダー固有のデータ)を送れる
+_ADV_TYPE_SPECIFIC_DATA = const(0xFF)    # 任意の送信データ(ベンダー固有のデータ)を送れる
 _ADV_DATA_COMPANY_ID = const(0xFFFF)    # ベンダーのID
 
 # gap_advertise(adv_data = ...)に渡されるメッセージパケットを生成します。
 # limited_disc : False=LE 一般検出可能モード　True=LE 限定検出可能モード
 # br_edr : False=BR/EDRはサポートされていません　True=0x18?
-# name : 
-デバイス名で任意につけてOK、iphone等のアプリ画面上にこの装置名が表示されます
+# name : デバイス名で任意につけてOK、iphone等のアプリ画面上にこの装置名が表示されます
 # services : サービスのUUID
-# appearance : 
-https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Characteristics/org.bluetooth.characteristic.gap.appearance.xml
-def advertising_payload(limited_disc=False, br_edr=False, name=None, 
-services=None, appearance=0, free=None):
+# appearance : https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Characteristics/org.bluetooth.characteristic.gap.appearance.xml
+def advertising_payload(limited_disc=False, br_edr=False, name=None, services=None, appearance=0, free=None):
     payload = bytearray()
 
     # アドバータイジングパケットの１データをパックします。
@@ -42,8 +34,7 @@ services=None, appearance=0, free=None):
 
     _append(
         _ADV_TYPE_FLAGS,
-        struct.pack("B", (0x01 if limited_disc else 0x02) + (0x18 if 
-br_edr else 0x04)),
+        struct.pack("B", (0x01 if limited_disc else 0x02) + (0x18 if br_edr else 0x04)),
     )
 
     if name:
@@ -59,8 +50,7 @@ br_edr else 0x04)),
             elif len(b) == 16:
                 _append(_ADV_TYPE_UUID128_COMPLETE, b)
 
-    # 
-org.bluetooth.characteristic.gap.appearance.xmlを参照してください。（デバイスの機能種別名）
+    # org.bluetooth.characteristic.gap.appearance.xmlを参照してください。（デバイスの機能種別名）
     if appearance:
         _append(_ADV_TYPE_APPEARANCE, struct.pack("<h", appearance))
 
@@ -90,11 +80,9 @@ class BLEPeripheral:
         self._ble = bluetooth.BLE()
         self._ble.active(True)
         self._ble.irq(self._irq)
-        ((self._handle_tx, self._handle_rx),) = 
-self._ble.gatts_register_services((_UART_SERVICE,))
+        ((self._handle_tx, self._handle_rx),) = self._ble.gatts_register_services((_UART_SERVICE,))
         self._connections = set()
-        self._payload = advertising_payload(name="swaggy", 
-services=[_UART_UUID])
+        self._payload = advertising_payload(name="swaggy2", services=[_UART_UUID])
         self._advertise()
 
     # 接続状態の取得
@@ -150,5 +138,9 @@ ble = BLEPeripheral()
 while True:
     pitch = hub.motion_sensor.get_pitch_angle()
     roll = hub.motion_sensor.get_roll_angle()
-    ble.send(str(pitch/30) + ", " + str(roll/10+9))
+    tosend = str(pitch/30) + ", " + str(roll/10+9)
+    print(tosend)
+    ble.send(tosend)
     utime.sleep(0.1)
+
+# print('starting\n\n')
