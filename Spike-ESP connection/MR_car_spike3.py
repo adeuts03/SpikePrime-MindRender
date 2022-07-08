@@ -1,7 +1,7 @@
-import util
-import imu
+import struct
 from math import *
 import bluetooth
+import imu
+import util
 import utime
-import struct
 from micropython import const
