@@ -1,2 +1,2 @@
 # SpikePrime-MindRender
-Connecting the LEGO SpikePrime system to MindRender – an educational programming tool
+Connecting the LEGO Spike Prime system to Mind Render – an educational programming tool
