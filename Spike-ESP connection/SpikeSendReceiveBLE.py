@@ -166,8 +166,6 @@ while True:
     payload = str(steer.get_position()) + "," + str(gas.get_force_percentage()) + "," + str(brake.get_force_percentage())
     ble.send(payload)
     print(payload)        # Uncomment if you think things are sus and wanna see what's being sent
-    # sleep(.1)            # Leaving in here during dev to not overload (no clue if there even is a risk of overload)
-
 
 # Sanity check
 print('If this is printing then something is very wrong with the loop.')
