@@ -88,7 +88,7 @@ class BLEPeripheral:
         self._ble.irq(self._irq)
         ((self._handle_tx, self._handle_rx),) = self._ble.gatts_register_services((_UART_SERVICE,))
         self._connections = set()
-        self._payload = advertising_payload(name="wheel", services=[_UART_UUID]) # Change name here, keep it < 9 characters
+        self._payload = advertising_payload(name="wheel3", services=[_UART_UUID]) # Change name here, keep it < 9 characters
         self._advertise()
 
     def is_connected(self):
@@ -159,8 +159,7 @@ steer.motor_stop()
 while True:
     # We need to manually tell the SPIKE to send data but receiving happens automatically from setup
     # Note that if we're receiving the collision speed from MR, that is acted upon directly at line ~125
-    payload = str(port.port_getSensor(0)[2]) + "," + str(force_sensor.get_force(1)) + "," + str(force_sensor.get_force(0))
-    print(payload)
+    payload = str(port.port_getSensor(0)[2]) + "," + str(force_sensor.get_force(5)) + "," + str(force_sensor.get_force(4))
     ble.send(payload)
     print(payload)        # Uncomment if you think things are sus and wanna see what's being sent
     sleep(.1)
