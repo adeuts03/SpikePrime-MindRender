@@ -2,16 +2,18 @@
 Based on SpikeSendReceiveBLE.py, this code is ported for Atlantis.
 
 To do
-- Make it work. Currently Atlantis doesn't have a get motor position command so the code won't work anyway.
+- Test
 
 Changelog
+7/22/22
+- Chris told me how to get motor position so putting that in now and testing
 7/20/22
 - Created file
 '''
 
 # Initialize the hub and get your imports
 import bluetooth, struct
-import motor, force_sensor, display
+import motor, force_sensor, display, port
 from micropython import const
 from time import sleep
 
@@ -157,7 +159,7 @@ steer.motor_stop()
 while True:
     # We need to manually tell the SPIKE to send data but receiving happens automatically from setup
     # Note that if we're receiving the collision speed from MR, that is acted upon directly at line ~125
-    payload = "180," + str(force_sensor.get_force(1)) + "," + str(force_sensor.get_force(0))
+    payload = str(port.port_getSensor(0)[2]) + "," + str(force_sensor.get_force(1)) + "," + str(force_sensor.get_force(0))
     print(payload)
     ble.send(payload)
     print(payload)        # Uncomment if you think things are sus and wanna see what's being sent

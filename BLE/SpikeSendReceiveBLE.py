@@ -154,9 +154,9 @@ sleep(.5)
 hub.display.pixel(2,2,10)
 
 # Set up the motor and force sensor on the Prime
-steer = Motor('E') # Make sure to switch this and the next two to the right port
-gas = ForceSensor('B')
-brake = ForceSensor('A')
+steer = Motor('A') # Make sure to switch this and the next two to the right port
+gas = ForceSensor('F')
+brake = ForceSensor('E')
 steer.set_stop_action('coast')
 steer.stop()
 
