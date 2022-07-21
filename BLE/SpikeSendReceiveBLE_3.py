@@ -2,7 +2,9 @@
 Based on SpikeSendReceiveBLE.py, this code is ported for Atlantis.
 
 To do
-- Test
+- Get the BLE feedback to work (rumble doesn't activate for some reason)
+- Put in a coast function, e.g. motor.motor_move_by_degrees(p2, degrees, speed,motor.MOTOR_END_STATE_FLOAT)
+- Test it all
 
 Changelog
 7/22/22
