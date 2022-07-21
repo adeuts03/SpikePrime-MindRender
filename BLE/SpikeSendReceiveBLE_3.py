@@ -88,7 +88,7 @@ class BLEPeripheral:
         self._ble.irq(self._irq)
         ((self._handle_tx, self._handle_rx),) = self._ble.gatts_register_services((_UART_SERVICE,))
         self._connections = set()
-        self._payload = advertising_payload(name="wheel3", services=[_UART_UUID]) # Change name here, keep it < 9 characters
+        self._payload = advertising_payload(name="wheel8", services=[_UART_UUID]) # Change name here, keep it < 9 characters
         self._advertise()
 
     def is_connected(self):
@@ -126,7 +126,7 @@ class BLEPeripheral:
                 sleep(.2)
                 steer.motor_move_at_speed(4,100*round(-msg))
                 sleep(.2)
-                steer.stop()
+                steer.motor_stop()
                 # print('0 steer')
                 # steer.run_for_seconds(.3, round(msg))
                 # print('1 steer')
@@ -161,7 +161,7 @@ while True:
     # Note that if we're receiving the collision speed from MR, that is acted upon directly at line ~125
     payload = str(port.port_getSensor(0)[2]) + "," + str(force_sensor.get_force(5)) + "," + str(force_sensor.get_force(4))
     ble.send(payload)
-    print(payload)        # Uncomment if you think things are sus and wanna see what's being sent
+    #print(payload)        # Uncomment if you think things are sus and wanna see what's being sent
     sleep(.1)
 
 # Sanity check
