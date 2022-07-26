@@ -1,24 +1,24 @@
 '''
-Based on SpikeSendReceive.py, this code makes the SPIKE into a force feedback steering wheel with gas and brake inputs. Oh, and 
-it's Bluetooth.
+Based on SpikeSendReceive.py, this code makes the SPIKE into a force feedback steering wheel with gas and brake inputs. Oh, and it's Bluetooth.
 
 To do
-- Clean up the rumble code - right now there's a bug where it won't send any data while it's rumbling which means you're stuck 
-  with the same speed and steering angle. Tried using the run_for_seconds() command in the Motor library from Spike and it just
-  breaks (stops running the code and freezes) and then if running via the SPIKE app it says you need to update the hub OS again.
-  A way to get past this might be to use Atlantis and async stuff.
-- Move the BLE stuff into a library maybe so we can save ~100 lines?
+- Clean
+- Make it faster maybe
 
 Changelog
+7/26/22
+- Reworked the whole thing so it now runs on async, the rumble freeze bug has been fixed
 7/20/22
 - Created file
 '''
 
 # Initialize the hub and get your imports
 import bluetooth, hub, struct
+import uasyncio as ua
 from spike import Motor, ForceSensor
 from micropython import const
 from time import sleep
+from random import randint
 
 
 # Set up Bluetooth structure data, provided to us by the Mind Render folks
@@ -92,7 +92,8 @@ class BLEPeripheral:
         self._ble.irq(self._irq)
         ((self._handle_tx, self._handle_rx),) = self._ble.gatts_register_services((_UART_SERVICE,))
         self._connections = set()
-        self._payload = advertising_payload(name="wheel", services=[_UART_UUID]) # Change name here, keep it < 9 characters
+        thingy = "wheel" + str(randint(1,100))
+        self._payload = advertising_payload(name=thingy, services=[_UART_UUID]) # Change name here, keep it < 9 characters
         self._advertise()
 
     def is_connected(self):
@@ -106,11 +107,16 @@ class BLEPeripheral:
 
     def _irq(self, event, data):
         if event == _IRQ_CENTRAL_CONNECT:
+            print('line 112|_IRQ_CENTRAL_CONNECT')
+            hub.sound.beep(750,100)
+            sleep(.1)
+            hub.sound.beep(800,100)
             conn_handle, _, _ = data
             self._connections.add(conn_handle)
             print("Connection", conn_handle)
 
         elif event == _IRQ_CENTRAL_DISCONNECT:
+            print('line 119|_IRQ_CENTRAL_DISCONNECT')
             print("Disconnected")
             conn_handle, _, _ = data
             if conn_handle in self._connections:
@@ -119,25 +125,17 @@ class BLEPeripheral:
             #self._advertise()
             print("Disconnected", conn_handle)
 
-        elif event == _IRQ_GATTS_WRITE:
-            # print('Read')
-            conn_handle, value_handle = data
-            value = self._ble.gatts_read(value_handle)
-            if value_handle == self._handle_rx:
-                msg = float(value.decode()) # Decoding what we read and turning it into a decimal
-                # print("received |", msg)
-                steer.start(round(msg)) # Creating force feedback based on the input from MR
-                sleep(.2)
-                steer.start(round(-msg))
-                sleep(.2)
-                steer.stop()
-                # print('0 steer')
-                # steer.run_for_seconds(.3, round(msg))
-                # print('1 steer')
-                # steer.run_for_seconds(.3, round(-msg))
-                # print('2 steer')
-                # steer.stop()
-                # print('done steer')
+
+        # Have to bypass this entire thing because for some reason it sleeps (I think it's from the BLE source code but don't know)
+        # elif event == _IRQ_GATTS_WRITE:
+            # print('line 130|_IRQ_GATTS_WRITE')
+            # conn_handle, value_handle = data
+            # value = self._ble.gatts_read(value_handle)
+            # if value_handle == self._handle_rx:
+            #    msg = float(value.decode()) # Decoding what we read and turning it into a decimal
+            #    # print("received |", msg)
+            #    # await ua.create_task(moving(msg))
+
 
     def _advertise(self):
         self._ble.gap_advertise(500000, adv_data=self._payload)
@@ -160,12 +158,49 @@ brake = ForceSensor('E')
 steer.set_stop_action('coast')
 steer.stop()
 
-while True:
-    # We need to manually tell the SPIKE to send data but receiving happens automatically from setup
-    # Note that if we're receiving the collision speed from MR, that is acted upon directly at line ~125
-    payload = str(steer.get_position()) + "," + str(gas.get_force_percentage()) + "," + str(brake.get_force_percentage())
-    ble.send(payload)
-    print(payload)        # Uncomment if you think things are sus and wanna see what's being sent
+
+async def sending():
+    while True:
+        payload = str(steer.get_position()) + "," + str(gas.get_force_percentage()) + "," + str(brake.get_force_percentage())
+        ble.send(payload)
+        # print(payload)
+        await ua.sleep(.01)
+
+async def moving(speed):
+    steer.start(round(speed))
+    await ua.sleep(.25)
+    steer.start(round(-speed))
+    await ua.sleep(.25)
+    steer.stop()
+
+async def thingy():
+    old = ""
+    while True:
+        conn_handle, value_handle = (1025,12)  # value_handle is 10 for connection statuses, 12 for data (i think idrk)
+        testing = ble._ble.gatts_read(value_handle)
+        # print("check is", testing==old, "because testing =",testing,", old =",old)
+        if (not testing == old) and testing:
+            old = testing
+            msg = float(testing.decode())
+            print("msg |", msg,"|| going to try to move")
+            await moving(msg)
+            # testing = ""
+            # msg = ""
+            # print('hopefully cleared|',testing,"|",msg)
+            # old = testing
+            # sleep(3)
+
+        await ua.sleep(.01)
+
+
+async def whoknows():
+
+    ua.create_task(thingy())
+
+    await ua.create_task(sending())
+
+
+ua.run(whoknows())
 
 # Sanity check
-print('If this is printing then something is very wrong with the loop.')
+print('If this is printing then something is very wrong with the code.')
