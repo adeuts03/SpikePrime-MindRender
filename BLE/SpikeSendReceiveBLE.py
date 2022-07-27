@@ -2,10 +2,11 @@
 Based on SpikeSendReceive.py, this code makes the SPIKE into a force feedback steering wheel with gas and brake inputs. Oh, and it's Bluetooth.
 
 To do
-- Clean
 - Make it faster maybe
 
 Changelog
+7/27/22
+- Cleaned it up
 7/26/22
 - Reworked the whole thing so it now runs on async, the rumble freeze bug has been fixed
 7/20/22
@@ -21,8 +22,9 @@ from time import sleep
 from random import randint
 
 
-# Set up Bluetooth structure data, provided to us by the Mind Render folks
-# This takes up a lot of the code, to skip to the main content jump to line ~150
+# Set up Bluetooth structure data, provided to us by the Mind Render folks and then modified.
+# This takes up a lot of the code, to skip to the main content jump to line 148. Remember to
+# change the name of your SPIKE (if you want) on line 97.
 _ADV_TYPE_FLAGS = const(0x01)
 _ADV_TYPE_NAME = const(0x09)
 _ADV_TYPE_UUID16_COMPLETE = const(0x3)
@@ -60,7 +62,6 @@ def advertising_payload(limited_disc=False, br_edr=False, name=None, services=No
             elif len(b) == 16:
                 _append(_ADV_TYPE_UUID128_COMPLETE, b)
 
-    # org.bluetooth.characteristic.gap.appearance.xmlを参照してください。（デバイスの機能種別名）
     if appearance:
         _append(_ADV_TYPE_APPEARANCE, struct.pack("<h", appearance))
 
@@ -92,8 +93,8 @@ class BLEPeripheral:
         self._ble.irq(self._irq)
         ((self._handle_tx, self._handle_rx),) = self._ble.gatts_register_services((_UART_SERVICE,))
         self._connections = set()
-        thingy = "wheel" + str(randint(1,100))
-        self._payload = advertising_payload(name=thingy, services=[_UART_UUID]) # Change name here, keep it < 9 characters
+        adv_name = "wheel" + str(randint(1,100)) # Change name here, keep it < 9 characters
+        self._payload = advertising_payload(name=adv_name, services=[_UART_UUID])
         self._advertise()
 
     def is_connected(self):
@@ -108,23 +109,22 @@ class BLEPeripheral:
     def _irq(self, event, data):
         if event == _IRQ_CENTRAL_CONNECT:
             print('line 112|_IRQ_CENTRAL_CONNECT')
-            hub.sound.beep(750,100)
+            hub.sound.beep(750,100) # A little sound effect when it connects
             sleep(.1)
             hub.sound.beep(800,100)
             conn_handle, _, _ = data
             self._connections.add(conn_handle)
-            print("Connection", conn_handle)
+            print("Connected | Handle:", conn_handle)
 
         elif event == _IRQ_CENTRAL_DISCONNECT:
             print('line 119|_IRQ_CENTRAL_DISCONNECT')
-            print("Disconnected")
+            hub.sound.beep(800,100) # A little sound effect when it disconnects
+            sleep(.1)
+            hub.sound.beep(750,100)
             conn_handle, _, _ = data
             if conn_handle in self._connections:
                 self._connections.remove(conn_handle)
-
-            #self._advertise()
-            print("Disconnected", conn_handle)
-
+            print("Disconnected | Handle:", conn_handle)
 
         # Have to bypass this entire thing because for some reason it sleeps (I think it's from the BLE source code but don't know)
         # elif event == _IRQ_GATTS_WRITE:
@@ -134,7 +134,7 @@ class BLEPeripheral:
             # if value_handle == self._handle_rx:
             #    msg = float(value.decode()) # Decoding what we read and turning it into a decimal
             #    # print("received |", msg)
-            #    # await ua.create_task(moving(msg))
+            #    # await ua.create_task(rumble(msg))
 
 
     def _advertise(self):
@@ -146,61 +146,57 @@ class BLEPeripheral:
 # This is where our code really begins, post BLE setup stuff
 ble = BLEPeripheral()
 
-# Quick light to make sure code is working
+# Quick light to make sure code is up and running
 hub.display.clear()
 sleep(.5)
 hub.display.pixel(2,2,10)
 
 # Set up the motor and force sensor on the Prime
-steer = Motor('A') # Make sure to switch this and the next two to the right port
+steer = Motor('A') # Make sure to switch this and the next two to the right ports
 gas = ForceSensor('F')
 brake = ForceSensor('E')
 steer.set_stop_action('coast')
 steer.stop()
 
-
+# Async function for sending SPIKE data to MR
 async def sending():
     while True:
         payload = str(steer.get_position()) + "," + str(gas.get_force_percentage()) + "," + str(brake.get_force_percentage())
         ble.send(payload)
-        # print(payload)
+        # print(payload) # Uncomment if you're sus at what data is being sent and you want to see
         await ua.sleep(.01)
 
-async def moving(speed):
+# Async function for the force feedback, called from receiving()
+async def rumble(speed):
     steer.start(round(speed))
     await ua.sleep(.25)
     steer.start(round(-speed))
     await ua.sleep(.25)
     steer.stop()
 
-async def thingy():
-    old = ""
+# Async function to get info from MR and process it as required
+async def receiving():
+    old_data = ""
     while True:
-        conn_handle, value_handle = (1025,12)  # value_handle is 10 for connection statuses, 12 for data (i think idrk)
-        testing = ble._ble.gatts_read(value_handle)
-        # print("check is", testing==old, "because testing =",testing,", old =",old)
-        if (not testing == old) and testing:
-            old = testing
-            msg = float(testing.decode())
-            print("msg |", msg,"|| going to try to move")
-            await moving(msg)
-            # testing = ""
-            # msg = ""
-            # print('hopefully cleared|',testing,"|",msg)
-            # old = testing
-            # sleep(3)
+        value_handle = 12 # 10 for connection statuses, 12 for data Tx (from what I can tell); don't change
+        new_data = ble._ble.gatts_read(value_handle)
+        
+        if (not new_data == old_data) and new_data:  # Need the second condition for edge case when it starts
+            old_data = new_data
+            msg = float(new_data.decode())
+            # print("msg |", msg,"|| going to rumble")  # Uncomment to see if you're sus
+            await rumble(msg)
 
         await ua.sleep(.01)
 
-
-async def whoknows():
-
-    ua.create_task(thingy())
-
+# Putting everything together
+async def main():
+    ua.create_task(receiving())
     await ua.create_task(sending())
 
 
-ua.run(whoknows())
+# Run
+ua.run(main())
 
 # Sanity check
 print('If this is printing then something is very wrong with the code.')
