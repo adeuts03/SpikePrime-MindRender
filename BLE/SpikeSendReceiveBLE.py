@@ -23,7 +23,7 @@ from random import randint
 
 
 # Set up Bluetooth structure data, provided to us by the Mind Render folks and then modified.
-# This takes up a lot of the code, to skip to the main content jump to line 148. Remember to
+# This takes up a lot of the code, to skip to the main content jump to line 152. Remember to
 # change the name of your SPIKE (if you want) on line 97.
 _ADV_TYPE_FLAGS = const(0x01)
 _ADV_TYPE_NAME = const(0x09)
@@ -95,7 +95,7 @@ class BLEPeripheral:
         self._connections = set()
         adv_name = "wheel" + str(randint(1,100)) # Change name here, keep it < 9 characters
         self._payload = advertising_payload(name=adv_name, services=[_UART_UUID])
-        self._advertise()
+        self._advertise(adv_name)
 
     def is_connected(self):
         return len(self._connections) > 0
@@ -137,9 +137,14 @@ class BLEPeripheral:
             #    # await ua.create_task(rumble(msg))
 
 
-    def _advertise(self):
+    def _advertise(self, name):
         self._ble.gap_advertise(500000, adv_data=self._payload)
-        print("Advertise")
+        hub.sound.beep(800,150) # A little sound effect when it starts advertising
+        sleep(.18)
+        hub.sound.beep(750,150)
+        sleep(.18)
+        hub.sound.beep(800,150)
+        print("Advertising as", name)
 
 
 
