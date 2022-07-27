@@ -24,7 +24,7 @@ from random import randint
 
 # Set up Bluetooth structure data, provided to us by the Mind Render folks and then modified.
 # This takes up a lot of the code, to skip to the main content jump to line 152. Remember to
-# change the name of your SPIKE (if you want) on line 97.
+# change the name of your SPIKE (if you want) on line 96.
 _ADV_TYPE_FLAGS = const(0x01)
 _ADV_TYPE_NAME = const(0x09)
 _ADV_TYPE_UUID16_COMPLETE = const(0x3)
