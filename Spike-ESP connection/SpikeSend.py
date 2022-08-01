@@ -14,7 +14,7 @@ Changelog
 
 
 
-# Make sure you have Backpack_Code.py "installed" (aka saved) on the Spike and send_udp.py installed on the ESP
+# Make sure you have Backpack_Code.py "installed" (aka saved) on the Spike and esp_send.py installed on the ESP
 
 # initialize the hub and get your imports
 from Backpack_Code import Backpack

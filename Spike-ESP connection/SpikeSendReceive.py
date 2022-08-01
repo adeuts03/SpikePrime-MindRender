@@ -12,6 +12,8 @@ Changelog
 - Created file
 '''
 
+# Make sure you have Backpack_Code.py "installed" (aka saved) on the Spike and esp_send.py installed on the ESP
+
 # Initialize the hub and get your imports
 from Backpack_Code import Backpack
 import hub, math, utime, os, sys
