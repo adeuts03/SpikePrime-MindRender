@@ -1,4 +1,11 @@
 '''
+
+
+!!!!
+As of 8/1/22 this is no longer in development.
+!!!!
+
+
 Based on SpikeSendReceiveBLE.py, this code is ported for Atlantis.
 
 To do

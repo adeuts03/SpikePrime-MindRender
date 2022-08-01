@@ -1,4 +1,6 @@
 '''
+Accompanying MR environment: shuffleboard9; share code: shuffleboard
+
 To do
 - clean up code
 

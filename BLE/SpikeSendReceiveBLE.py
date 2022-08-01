@@ -1,5 +1,6 @@
 '''
 Based on SpikeSendReceive.py, this code makes the SPIKE into a force feedback steering wheel with gas and brake inputs. Oh, and it's Bluetooth.
+Accompanying MR environment: FF Driving BLE v8; share code: spikedriving
 
 To do
 - Make it faster maybe
