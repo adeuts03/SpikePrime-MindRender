@@ -1,18 +1,25 @@
-'''
-Based on SpikeSendReceive.py, this code makes the SPIKE into a force feedback steering wheel with gas and brake inputs. Oh, and it's Bluetooth.
+"""
+Based on SpikeSendReceive.py, this code turns the SPIKE hub along with a motor/
+position sensor and two force sensors into a force feedback (FF) steering wheel 
+with gas and brake inputs. Oh, and it's Bluetooth.
+
+Example LEGO FF steering wheel can be found in this folder
+
 Accompanying MR environment: FF Driving BLE v8; share code: spikedriving
 
 To do
 - Make it faster maybe
+- Add comments to the BLEPeripheral class
 
 Changelog
 7/27/22
 - Cleaned it up
 7/26/22
-- Reworked the whole thing so it now runs on async, the rumble freeze bug has been fixed
+- Reworked the whole thing so it now runs on async, the rumble freeze bug has 
+been fixed
 7/20/22
 - Created file
-'''
+"""
 
 # Initialize the hub and get your imports
 import bluetooth, hub, struct
@@ -23,9 +30,10 @@ from time import sleep
 from random import randint
 
 
-# Set up Bluetooth structure data, provided to us by the Mind Render folks and then modified.
-# This takes up a lot of the code, to skip to the main content jump to line 152. Remember to
-# change the name of your SPIKE (if you want) on line 96.
+# Set up Bluetooth structure data, provided to us by the Mind Render folks and 
+# then modified.
+# This takes up a lot of the code, to skip to the main content jump to line 
+# 165. Remember to change the name of your SPIKE (if you want) on line 108.
 _ADV_TYPE_FLAGS = const(0x01)
 _ADV_TYPE_NAME = const(0x09)
 _ADV_TYPE_UUID16_COMPLETE = const(0x3)
@@ -38,7 +46,8 @@ _ADV_TYPE_APPEARANCE = const(0x19)
 _ADV_TYPE_SPECIFIC_DATA = const(0xFF)
 _ADV_DATA_COMPANY_ID = const(0xFFFF)
 
-def advertising_payload(limited_disc=False, br_edr=False, name=None, services=None, appearance=0, free=None):
+def advertising_payload(limited_disc=False, br_edr=False, name=None, 
+                        services=None, appearance=0, free=None):
     payload = bytearray()
 
     def _append(adv_type, value):
@@ -47,7 +56,8 @@ def advertising_payload(limited_disc=False, br_edr=False, name=None, services=No
 
     _append(
         _ADV_TYPE_FLAGS,
-        struct.pack("B", (0x01 if limited_disc else 0x02) + (0x18 if br_edr else 0x04)),
+        struct.pack("B", (0x01 if limited_disc else 0x02) + (0x18 if br_edr 
+                                                             else 0x04)),
     )
 
     if name:
@@ -92,10 +102,13 @@ class BLEPeripheral:
         self._ble = bluetooth.BLE()
         self._ble.active(True)
         self._ble.irq(self._irq)
-        ((self._handle_tx, self._handle_rx),) = self._ble.gatts_register_services((_UART_SERVICE,))
+        ((self._handle_tx, self._handle_rx),) = \
+            self._ble.gatts_register_services((_UART_SERVICE,))
         self._connections = set()
-        adv_name = "wheel" + str(randint(1,100)) # Change name here, keep it < 9 characters
-        self._payload = advertising_payload(name=adv_name, services=[_UART_UUID])
+        # Change name here, keep it < 9 characters
+        adv_name = "wheel" + str(randint(1, 100)) 
+        self._payload = advertising_payload(name=adv_name, 
+                                            services=[_UART_UUID])
         self._advertise(adv_name)
 
     def is_connected(self):
@@ -127,13 +140,15 @@ class BLEPeripheral:
                 self._connections.remove(conn_handle)
             print("Disconnected | Handle:", conn_handle)
 
-        # Have to bypass this entire thing because for some reason it sleeps (I think it's from the BLE source code but don't know)
+        # Have to bypass this entire thing because for some reason it sleeps 
+        # (I think it's from the BLE source code but don't know)
         # elif event == _IRQ_GATTS_WRITE:
             # print('line 130|_IRQ_GATTS_WRITE')
             # conn_handle, value_handle = data
             # value = self._ble.gatts_read(value_handle)
             # if value_handle == self._handle_rx:
-            #    msg = float(value.decode()) # Decoding what we read and turning it into a decimal
+            #    msg = float(value.decode()) # Decoding what we read and 
+            #    turning it into a decimal
             #    # print("received |", msg)
             #    # await ua.create_task(rumble(msg))
 
@@ -146,7 +161,6 @@ class BLEPeripheral:
         sleep(.18)
         hub.sound.beep(800,150)
         print("Advertising as", name)
-
 
 
 # This is where our code really begins, post BLE setup stuff

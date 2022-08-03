@@ -1,3 +1,5 @@
+"""Test file that receives UDP messages"""
+
 import socket
 
 UDP_IP = "10.245.95.56"

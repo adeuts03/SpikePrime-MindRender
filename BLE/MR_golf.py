@@ -1,9 +1,24 @@
-from spike import PrimeHub, LightMatrix, Button, StatusLight, ForceSensor, MotionSensor, Speaker, ColorSensor, Motor, MotorPair
+"""
+Program that connects to Mind Render via bluetooth and controls a character 
+in a wii-sports-esque golfing game using the hub's built-in accelerometer.
+
+Accompanying MR environment: golf_spike; share code: golf_spike
+
+To do
+- Add comments to the BLEPeripheral class
+"""
+
+from spike import (PrimeHub, LightMatrix, Button, StatusLight, ForceSensor, 
+                   MotionSensor, Speaker, ColorSensor, Motor, MotorPair)
 from spike.control import wait_for_seconds, wait_until, Timer
 from hub import motion
-import math, bluetooth, time, struct
+import math, bluetooth, time, struct, random
 from micropython import const
 
+# Set up Bluetooth structure data, provided to us by the Mind Render folks and 
+# then modified.
+# This takes up a lot of the code, to skip to the main content jump to line 
+# 146. Remember to change the name of your SPIKE (if you want) on line 99.
 _ADV_TYPE_FLAGS = const(0x01)
 _ADV_TYPE_NAME = const(0x09)
 _ADV_TYPE_UUID16_COMPLETE = const(0x3)
@@ -77,9 +92,12 @@ class BLEPeripheral:
         self._ble = bluetooth.BLE()
         self._ble.active(True)
         self._ble.irq(self._irq)
-        ((self._handle_tx, self._handle_rx),) = self._ble.gatts_register_services((_UART_SERVICE,))
+        ((self._handle_tx, self._handle_rx),) = \ 
+            self._ble.gatts_register_services((_UART_SERVICE,))
         self._connections = set()
-        self._payload = advertising_payload(name="alan", services=[_UART_UUID])
+        rand = random.randint(1, 100)
+        golf = "golf" + str(rand)
+        self._payload = advertising_payload(name=golf, services=[_UART_UUID])
         self._advertise()
 
     def is_connected(self):
@@ -125,7 +143,10 @@ class BLEPeripheral:
         #self._ble.gap_advertise(500, "MindRender")
         print("Advertising")
 
+# Initialize hub
 hub = PrimeHub()
+
+# Indicate that hub is advertising
 hub.light_matrix.show_image('HAPPY')
 
 ble = BLEPeripheral()
