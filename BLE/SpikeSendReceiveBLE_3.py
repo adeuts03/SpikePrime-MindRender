@@ -1,8 +1,6 @@
-'''
-
-
+"""
 !!!!
-As of 8/1/22 this is no longer in development.
+As of 8/1/22 this is no longer in development. This program is not functional.
 !!!!
 
 
@@ -18,7 +16,7 @@ Changelog
 - Chris told me how to get motor position so putting that in now and testing
 7/20/22
 - Created file
-'''
+"""
 
 # Initialize the hub and get your imports
 import bluetooth, struct

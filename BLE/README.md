@@ -1,7 +1,5 @@
 # BLE
-
-
-This method is pretty straightforward, you just build out your LEGO device and then run some codes. 
+This method is pretty straightforward, you just build out your LEGO device and then run some code. 
 
 File descriptions:
 - MR_car.py: SPIKE code that turns the hub into a gyroscope based steering wheel/accelerator and sends data to MR
