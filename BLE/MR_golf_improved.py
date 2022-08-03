@@ -1,10 +1,29 @@
-from spike import PrimeHub, LightMatrix, Button, StatusLight, ForceSensor, MotionSensor, Speaker, ColorSensor, Motor, MotorPair
+"""
+Program based off MR_golf.py. This program changes the device(s) used to 
+control the turning of the robot and height of the ball's trajectory from the 
+two left and right buttons included on the hub to a wheel attached to a 
+rotation sensor. This version also makes use of a light sensor to indicate when 
+the user will swing.
+
+Example LEGO golf club build can be found in this folder
+
+Accompanying MR environment: golf_improved; share code: golf_improved
+
+To do
+- Add comments to the BLEPeripheral class
+"""
+
+from spike import (PrimeHub, LightMatrix, Button, ColorSensor, MotionSensor, 
+                   Motor)
 from spike.control import wait_for_seconds, wait_until, Timer
 from hub import motion
-import math, bluetooth, time, struct
+import math, bluetooth, time, struct, random
 from micropython import const
-import uasyncio
 
+# Set up Bluetooth structure data, provided to us by the Mind Render folks and 
+# then modified.
+# This takes up a lot of the code, to skip to the main content jump to line 
+# 151. Remember to change the name of your SPIKE (if you want) on line 105.
 _ADV_TYPE_FLAGS = const(0x01)
 _ADV_TYPE_NAME = const(0x09)
 _ADV_TYPE_UUID16_COMPLETE = const(0x3)
@@ -68,7 +87,8 @@ _UART_SERVICE = (
     (_UART_TX, _UART_RX),
 )
 
-def winning_display():
+
+def won():
     """Display target when player completes the hole."""
     for i in range(50):
         hub.light_matrix.show_image("YES", i*2)
@@ -78,9 +98,12 @@ class BLEPeripheral:
         self._ble = bluetooth.BLE()
         self._ble.active(True)
         self._ble.irq(self._irq)
-        ((self._handle_tx, self._handle_rx),) = self._ble.gatts_register_services((_UART_SERVICE,))
+        ((self._handle_tx, self._handle_rx),) = \ 
+            self._ble.gatts_register_services((_UART_SERVICE,))
         self._connections = set()
-        self._payload = advertising_payload(name="alan", services=[_UART_UUID])
+        rand = random.randint(1, 100)
+        golf = "golf" + str(rand)
+        self._payload = advertising_payload(name=golf, services=[_UART_UUID])
         self._advertise()
 
     def is_connected(self):
@@ -97,8 +120,6 @@ class BLEPeripheral:
             conn_handle, _, _ = data
             self._connections.add(conn_handle)
             print("Connection", conn_handle)
-            for i in range(50):
-                hub.light_matrix.show_image("ARROW_N", i*2)
 
         elif event == _IRQ_CENTRAL_DISCONNECT:
             print("Disconnected")
@@ -118,49 +139,72 @@ class BLEPeripheral:
                 msg = value.decode()
                 print("Rx", msg)
                 if  msg == "score":
-                    winning_display()
-
+                    won()
+                elif msg == "reset":
+                    main_loop()
 
     def _advertise(self):
         self._ble.gap_advertise(500000, adv_data=self._payload)
         #self._ble.gap_advertise(500, "MindRender")
         print("Advertising")
 
+# Initialize hub
 hub = PrimeHub()
+
+# Indicate that hub is advertising
 hub.light_matrix.show_image('HAPPY')
 
 ble = BLEPeripheral()
 
+# Store the degrees counted by the sensor sensor when program exits turning 
+# mode globally so it can be accessed next time the function is called. 
+last_degrees_counted1 = 0
 def turning_mode():
-    """Loop that controls the robot's turning"""
+    """Loop that controls the robot's rotation
+    
+    Degrees of rotation sensor 
+    The ratio of degrees rotated in real life to degrees rotated in MR is 5:1
+    """
     print("turning mode")
     for i in range(50):
         hub.light_matrix.show_image("SQUARE_SMALL", i*2)
+    
+    # Initialize rotation sensor (make sure to change to whatever port you use)
+    sensor = Motor('A')
 
+    global last_degrees_counted1
+    
+    # Start degrees counted where the function last left off
+    sensor.set_degrees_counted(last_degrees_counted1)
     while True:
-        # Robot turns when -1 or 1 is sent, stops turning when 0 is sent
-        if hub.left_button.is_pressed(): 
-            ble.send(str(-1))
-            print("sent left")
-            hub.left_button.wait_until_released()
-            ble.send(str(0))
-            print("sent neutral")
-        elif hub.right_button.is_pressed():
-            ble.send(str(1))
-            print("sent right")
-            hub.right_button.wait_until_released()
-            ble.send(str(0))
-            print("sent neutral")
+        # Inverse degree reading to make clockwise rotation of sensor 
+        # correspond to clockwise (right) rotation of robot
+        degrees = sensor.get_degrees_counted() * -1
+        
+        # "turn:" tag indicates to MR that incoming data controls turning
+        ble.send("turn:" + str(degrees / 5))
+        # Sleep time should be tweaked for your system, but for the Microsoft 
+        # Surface Studio Laptop we tested on, 0.02 seconds was optimal.
+        time.sleep(0.02)
+
         # cycles to height_mode when tapped
-        elif hub.motion_sensor.get_gesture() == "tapped":
+        if hub.motion_sensor.get_gesture() == "tapped":
+            # Records last degrees counted
+            last_degrees_counted1 = sensor.get_degrees_counted()
+            
             height_mode()
             break
 
+last_degrees_counted2 = 0
 def height_mode():
-    """Loop that controls the trajectory's height"""
+    """Loop that controls the trajectory's height
+    
+    Overall mechanism and implementation is very similar to that of 
+    turning_mode()
+    """
     print("height mode")
 
-    # display double-edged arrow
+    # display double-edged arrow to indicate height mode
     hub.light_matrix.off()
     for i in range(50):
         hub.light_matrix.set_pixel(2, 0, i*2)
@@ -171,25 +215,39 @@ def height_mode():
         hub.light_matrix.set_pixel(1, 3, i*2)
         hub.light_matrix.set_pixel(3, 3, i*2)
 
+    sensor = Motor('A')
+
+    global last_degrees_counted2
+
+    sensor.set_degrees_counted(last_degrees_counted2)
     while True:
-        # same mechanism as in turning_mode()
-        if hub.left_button.is_pressed():
-            ble.send(str(2))
-            print("sent down")
-            hub.left_button.wait_until_released()
-            ble.send(str(3))
-            print("sent neutral")
-        elif hub.right_button.is_pressed():
-            ble.send(str(4))
-            print("sent up")
-            hub.right_button.wait_until_released()
-            ble.send(str(3))
-            print("sent neutral")
+        # Since the height gauge in MR caps goes from 0 to 50 and starts at 
+        # 25, degrees are capped at 250 which in turn is divided by ten which 
+        # means the actual number sent is limited between 25 and -25.
+
+        degrees = sensor.get_degrees_counted()
+        if degrees > 250:
+            degrees = 250
+            sensor.set_degrees_counted(250)
+        elif degrees < -250:
+            degrees = -250
+            sensor.set_degrees_counted(-250)
+
+        ble.send("height:" + str(degrees / 10))
+        time.sleep(0.02)
+
         # cycles to main_loop() when tapped
-        elif hub.motion_sensor.get_gesture() == "tapped":
+        if hub.motion_sensor.get_gesture() == "tapped":
+            last_degrees_counted2 = sensor.get_degrees_counted()
             break
-    
-def shooting_mode():
+
+def main_loop():
+    # Initialize color sensor (make sure to change to whatever port you use)
+    color = ColorSensor('E')
+
+    # Record gesture first time program is run so program doesn't immediately 
+    # switch to next mode
+    hub.motion_sensor.get_gesture()
     """Loop that is responsible for shooting ball based on accelerometer data"""
     while True:
         print("shooting mode")
@@ -200,38 +258,42 @@ def shooting_mode():
         accs = []
 
         while True:
-            if hub.left_button.is_pressed():
+            # If sensor is covered
+            if color.get_reflected_light() > 40:
                 print("collecting data")
-                # display slower arrow when left button is pressed
-                for i in range(100):
-                    hub.light_matrix.show_image("ARROW_N", i)
-                    time.sleep(0.01)
-                while hub.left_button.is_pressed():
-                    # instantaneous x y z acceleration
+
+                # Turn off light matrix to indicate data collecting
+                hub.light_matrix.off()
+
+                while color.get_reflected_light() > 40:
+                    # Instantaneous x y z acceleration
                     (a_x, a_y, a_z) = motion.accelerometer()
 
-                    # take magnitude of x, and y acceleration and append to array
+                    # Take magnitude of x, and y acceleration and append to array
                     mag = math.sqrt(a_x**2 + a_y**2)
                     accs.append(mag)
 
-                    # samples acceleration every 0.01 seconds
+                    # Samples acceleration every 0.01 seconds
                     time.sleep(0.01)
             
                 try:
                     acc = max(accs)
                     print("Acceleration: ", acc)
-                    ble.send(str(acc))
-                # if no acc data was collected before button was released
+                    for i in range(50):
+                        hub.light_matrix.show_image("ARROW_N", i*2)
+                    ble.send("shoot:" + str(acc))
+                # If no acc data was collected before button was released
                 except ValueError:
                     print("Hold down the button for longer!")
-            # cycles to turning_mode() when tapped
+                    for i in range(50):
+                        hub.light_matrix.show_image("ARROW_N", i*2)
+
+            # Cycles to turning_mode() when tapped
             elif hub.motion_sensor.get_gesture() == "tapped":
                 turning_mode()
                 break
-            
-async def main():
 
-#  Minimizes lag during first connection
+# Minimizes lag during first connection
 while True:
     if ble.is_connected():
         time.sleep(1)
