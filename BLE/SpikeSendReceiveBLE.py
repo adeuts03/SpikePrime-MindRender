@@ -9,6 +9,7 @@ Accompanying MR environment: FF Driving BLE v8; share code: spikedriving
 
 To do
 - Make it faster maybe
+- Add comments to the BLEPeripheral class
 
 Changelog
 7/27/22
