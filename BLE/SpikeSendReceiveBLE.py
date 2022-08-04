@@ -32,11 +32,10 @@ from micropython import const
 from time import sleep
 from random import randint
 
-
 # Set up Bluetooth structure data, provided to us by the Mind Render folks and 
 # then modified.
 # This takes up a lot of the code, to skip to the main content jump to line 
-# 169. Remember to change the name of your SPIKE (if you want) on line 112.
+# 169. Remember to change the name of your SPIKE (if you want) on line 111.
 _ADV_TYPE_FLAGS = const(0x01)
 _ADV_TYPE_NAME = const(0x09)
 _ADV_TYPE_UUID16_COMPLETE = const(0x3)
@@ -158,7 +157,8 @@ class BLEPeripheral:
 
     def _advertise(self, name):
         self._ble.gap_advertise(500000, adv_data=self._payload)
-        hub.sound.beep(800,150) # A little sound effect when it starts advertising
+        # A little sound effect when it starts advertising
+        hub.sound.beep(800,150) 
         sleep(.18)
         hub.sound.beep(750,150)
         sleep(.18)
@@ -200,9 +200,11 @@ async def sending():
         elif degrees < 0:
             degrees = 0
         
-        payload = str(degrees) + "," + str(gas.get_force_percentage()) + "," + str(brake.get_force_percentage())
+        payload = (str(degrees) + "," + str(gas.get_force_percentage()) + "," + 
+                   str(brake.get_force_percentage()))
         ble.send(payload)
-        # print(payload) # xUncomment if you're sus at what data is being sent and you want to see
+        # print(payload) # xUncomment if you're sus at what data is being sent 
+        # and you want to see
         await ua.sleep(.01)
 
 # Async function for the force feedback, called from receiving()
@@ -217,13 +219,17 @@ async def rumble(speed):
 async def receiving():
     old_data = ""
     while True:
-        value_handle = 12 # 10 for connection statuses, 12 for data Tx (from what I can tell); don't change
+        # 10 for connection statuses, 12 for data Tx (from what I can tell); 
+        # don't change
+        value_handle = 12
         new_data = ble._ble.gatts_read(value_handle)
         
-        if (not new_data == old_data) and new_data:  # Need the second condition for edge case when it starts
+        # Need the second condition for edge case when it starts
+        if (not new_data == old_data) and new_data: 
             old_data = new_data
             msg = float(new_data.decode())
-            # print("msg |", msg,"|| going to rumble")  # Uncomment to see if you're sus
+            # Uncomment to see if you're sus
+            # print("msg |", msg,"|| going to rumble")
             await rumble(msg)
 
         await ua.sleep(.01)
@@ -232,7 +238,6 @@ async def receiving():
 async def main():
     ua.create_task(receiving())
     await ua.create_task(sending())
-
 
 # Run
 ua.run(main())
